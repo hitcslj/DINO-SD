@@ -1,2 +1,1 @@
-# DINO-SD
-1st place at Robust Depth Estimation on RoboDrive Challenge, @ICRA 2024
+# DINO-SD: Champion Solution for ICRA 2024 RoboDepth Challenge
