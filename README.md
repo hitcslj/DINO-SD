@@ -22,50 +22,94 @@ Surround-view depth estimation is a crucial task aims to acquire the depth maps 
 | DINO-SD | nuScenes | 0.187 | 1.468 | 6.236 | 0.276 | 0.734 | 0.895 | 0.953 | [model]() |
 
 ## Install
-* python 3.8, pytorch 2.2.2, CUDA 11.4, RTX 3090
+* python 3.8, pytorch 2.2.2, CUDA 11.7, RTX 3090
 ```bash
 git clone https://github.com/hitcslj/DINO-SD.git
 conda create -n dinosd python=3.8
 conda activate dinosd
 pip install -r requirements.txt
 ```
-Since we use [dgp codebase](https://github.com/TRI-ML/dgp) to generate groundtruth depth, you should also install it. 
 
 ## Data Preparation
 Datasets are assumed to be downloaded under `data/<dataset-name>`.
 
-
-### nuScenes
 * Please download the official [nuScenes dataset](https://www.nuscenes.org/download) to `data/nuscenes/raw_data`
 * Export depth maps for evaluation 
 ```bash
 cd tools
 python export_gt_depth_nusc.py val
 ```
+
+For evaluation data preparation, kindly download the dataset from the following resources:
+
+| Type | Phase 1 | Phase 2 |
+| :-: | :-: | :-: |
+| Google Drive | [`link1`](https://drive.google.com/file/d/1FEiBlX9SV69DEaHVfpKcWjkTZQAVSfvw/view?usp=drive_link) or [`link2`](https://drive.google.com/file/d/1V2YTaBgqEEKKFiD7uQ2z3cf7GMHuUYk1/view?usp=sharing) | [`link1`](https://drive.google.com/file/d/1wBg0RhjboUmBs6Ibyq-d8qNzZTgtalwV/view?usp=sharing) or `link2` |
+
+
+
 * The final data structure should be:
 ```
 DINO-SD
 ├── data
 │   ├── nuscenes
-│   │   │── raw_data
-│   │   │   │── samples
-|   |   |   |── sweeps
-|   |   |   |── maps
-|   |   |   |── v1.0-trainval
-|   |   |── depth
-│   │   │   │── samples
+│   │   ├── depth
+│   │   └── raw_data
+|   |       ├── maps
+|   |       ├── robodrive-v1.0-test
+|   |       └── samples 
+│   └── robodrive
+├── datasets
+│   ├── __init__.py
+│   ├── corruption_dataset.py
+│   ├── ddad_dataset.py
+│   ├── mono_dataset.py
+│   ├── nusc_dataset.py
+│   ├── nusc
+│   ├── ddad
+│   └── robodrive
+│
+...
 ```
 
 ## Training
-Train model.
 ```bash
-python -m torch.distributed.launch --nproc_per_node 8 --num_workers=8 run.py  --model_name nusc  --config configs/nusc.txt 
+bash train.sh # baseline
+bash train_dinosd.sh # dino-sd
 ```
 
 ## Evaluation
 ```bash
-python -m torch.distributed.launch --nproc_per_node ${NUM_GPU}  run.py  --model_name test  --config configs/${TYPE}.txt --models_to_load depth encoder   --load_weights_folder=${PATH}  --eval_only 
+bash eval.sh
+bash eval_dinosd.sh # dino-sd
 ```
+
+The generated results will be saved in the folder structure as follows. Each `results.pkl` is a dictionary, its key is `sample_idx` and its value is `np.ndarray`.
+
+```bash
+.
+├── brightness
+│   └── results.pkl
+├── color_quant
+│   └── results.pkl
+├── contrast
+│   └── results.pkl
+...
+├── snow
+└── zoom_blur
+```
+
+Next, kindly merge all the `.pkl` files into a **single** `pred.npz` file.
+
+You can merge the results using the following command:
+```bash
+python ./convert_submit.py
+```
+> **:warning: Note:** The prediction file **MUST** be named as `pred.npz`.
+
+Finally, upload the compressed file to Track `4`'s [evaluation server](https://codalab.lisn.upsaclay.fr/competitions/17226) for model evaluation.
+
+> **:blue_car: Hint:** We provided the baseline submission file at [this](https://drive.google.com/drive/folders/1oEDgaBdmkXN3dv45fbvnzdo9Gw20PXk-?usp=sharing) Google Drive link. Feel free to download and check it for reference and learn how to correctly submit the prediction files to the server.
 
 ## Acknowledgement
 
